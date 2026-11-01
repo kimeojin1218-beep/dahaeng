@@ -71,6 +71,7 @@
   #rx-tea{font-size:28px!important;font-weight:700!important;letter-spacing:-0.04em!important;color:var(--ink)!important;}
   .fortune-text{font-size:15px;color:var(--ink);line-height:1.85;letter-spacing:-0.01em;font-weight:300;}
 </style>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
 </head>
 <body>
 <div class="kiosk">
@@ -208,6 +209,9 @@ const ILLU_GRAY = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAYUAAAH0CAYAAAD
 const SKR=['갑','을','병','정','무','기','경','신','임','계'];
 const SHJ=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
 const BKR=['자','축','인','묘','진','사','오','미','신','유','술','해'];
+// 일주별 동물 일러스트: illu/c(컬러, 화면) · illu/g(흑백, 영수증), 파일명 = 60갑자 순번(갑자=01 … 계해=60)
+function iljuNo(stemKr,branchKr){var si=SKR.indexOf(stemKr),bi=BKR.indexOf(branchKr);if(si<0||bi<0)return 0;for(var n=0;n<60;n++){if(n%10===si&&n%12===bi)return n+1;}return 0;}
+function iljuIlluSrc(p,kind){var n=p?iljuNo(p.stem,p.branch):0;return n?('illu/'+kind+'/'+(n<10?'0':'')+n+'.webp'):(kind==='g'?ILLU_GRAY:ILLU_COLOR);}
 const BHJ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
 const SE={갑:'목',을:'목',병:'화',정:'화',무:'토',기:'토',경:'금',신:'금',임:'수',계:'수'};
 const BE={자:'수',축:'토',인:'목',묘:'목',진:'토',사:'화',오:'화',미:'토',신:'금',유:'금',술:'토',해:'수'};
@@ -459,7 +463,7 @@ async function doSubmit(){
 
 function showResult(r){
   var rft=document.getElementById('result-fortune-type');if(rft)rft.textContent=r.fortuneType;
-  var illuImg=document.getElementById('result-illu-img');if(illuImg)illuImg.src=ILLU_COLOR;
+  var illuImg=document.getElementById('result-illu-img');if(illuImg){illuImg.onerror=function(){this.onerror=null;this.src=ILLU_COLOR;};illuImg.src=iljuIlluSrc(r.dp,'c');}
   document.getElementById('result-ilju').textContent=r.ilju;
   document.getElementById('result-desc').textContent=getIljuDesc(r.dp.stem, r.dp.branch);
   const labels=['연주','월주','일주','시주'],ps=[r.yp,r.mp,r.dp,r.hp];
@@ -597,7 +601,7 @@ function thresholdAll(ctx, w, h, skip){
 
 async function buildReceiptCanvas(r){
   await ensureFonts();
-  var illu = await loadImg(ILLU_GRAY), logo = await loadImg(LOGO_SRC);
+  var illu = (await loadImg(iljuIlluSrc(r.dp,'g'))) || (await loadImg(ILLU_GRAY)), logo = await loadImg(LOGO_SRC);
   var W = PRINT_W, c = document.createElement('canvas'); c.width = W; c.height = 2400;
   var x = c.getContext('2d'), y = 28, CX = W / 2, PAD = 32, illuBox = null;
   x.fillStyle = '#fff'; x.fillRect(0, 0, W, c.height); x.fillStyle = '#000'; x.textBaseline = 'alphabetic'; x.textAlign = 'center';
